@@ -1,0 +1,14 @@
+#data and results files
+data/*
+results/*
+
+#Python 
+*__pycache__
+
+#PyCharm stuff
+.idea
+venv
+
+#R
+*.Rhistory
+*.Rproj.user
