@@ -1,0 +1,418 @@
+---
+title: "TR Location Analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Setup of packages and functions
+library(tidyverse)
+
+source("src/source_all.R")
+source_all("matteo_functions/")
+source_all("src/")
+```
+
+# Introduction
+This document describes an analysis of the location of various TR types in proteins associated with signalling pathways commonly implicated in CRC. The five main pathways analysed were: WNT, P53, PI3K, TGF-beta and RAS-MAPK. 
+Proteins belonging to each pathway were obtained by querying UniProt for reviewed human proteins associated with a certain pathway. The set of proteins for each pathway was supplemented using lists of curated genes that are often affected in cancer. These lists were taken from Sanchez-Vega (2018) https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6070353/. For each gene, the encoded proteins were queried from UniProt and merged with the previously obtained set of proteins for each pathway. This resulted in the following number of proteins per pathway: WNT (698), P53 (701), PI3K (311), TGF-Beta (264), RAS-MAPK (126). In addition, proteins belonging to the DNA mismatch-repair (MMR) system were analysed (26 proteins, TODO), as well as proteins associated with favourable (404) or unfavourable (286) CRC prognosis in the Human Protein Atlas https://www.proteinatlas.org/humanproteome/pathology/colorectal+cancer.
+
+# Results
+```{r, include=FALSE}
+# Important paths
+base_path = "/Users/maxverbiest/PhD/projects/SP_CRC_Pathway_TRs/"
+dest_file_sp <- "../data/swissrepeats/swissprot_human.tsv"
+```
+
+Below are two plots for each analysed pathway. One of the plots shows the distribution of all types of TRs (homo, micro, small, domain) in the pathway, the other shows the distribution of only the homo and small TRs. At the end of the document is an overview table showing some basic numbers for each pathway (how many proteins, how many TRs etc.).
+### WNT pathway
+```{r, include=FALSE}
+# Load data: Protein source, TRs
+wnt_data <- load_pathway_data(base_path, "wnt", meta = TRUE, idr = TRUE)
+wnt_trs <- wnt_data["trs"][[1]]
+wnt_meta <- wnt_data["meta"][[1]]
+```
+
+
+```{r, include=FALSE}
+# Join with SwissProt information on proteins
+wnt_sp <- load_swissprot(dest_file_sp, wnt_trs)
+wnt_trs_sp <- merge(x = wnt_trs, y = wnt_sp, by = "ID", all.x = TRUE)
+wnt_trs_sp_meta <- merge(x = wnt_trs_sp, y = wnt_meta, by = "ID", all.x = TRUE)
+```
+
+
+```{r, include=FALSE}
+summary_table_df <- data.frame(matrix(ncol=6,nrow=8, dimnames=list(c("wnt", "p53", "pi3k", "ras-mapk", "tgf-beta", "mmr", "pa_fav", "pa_unfav"), c("total_prots", "prots_with_TR", "total_TRs", "prots_with_TR_filt", "total_TRs_filt", "TR_prots_from_SV"))))
+
+summary_table_df["total_prots"] <- c(698, 701, 311, 264, 126, 26, 404, 286)
+
+# Total number of proteins containing TRs (before filter)
+summary_table_df["wnt", "prots_with_TR"] <- length(unique(wnt_trs_sp_meta$ID))
+# Total number of TRs (before filter)
+summary_table_df["wnt", "total_TRs"] <- length(wnt_trs_sp_meta$ID)
+
+# Filter for divergence and p-value of TRs
+wnt_trs_sp_meta_filt = wnt_trs_sp_meta %>% 
+  filter(divergence <= 0.1 & pvalue <= 0.05)
+# Number of proteins containing TRs after filter
+summary_table_df["wnt", "prots_with_TR_filt"] <- length(unique(wnt_trs_sp_meta_filt$ID))
+# Total number of TRs after filter
+summary_table_df["wnt", "total_TRs_filt"] <- length(wnt_trs_sp_meta_filt$ID)
+
+# Count how many of the proteins containing TRs originate from the Sanchez-Vega list of curated genes
+sv_count = 0
+for (i in unique(wnt_trs_sp_meta_filt$ID)) {
+  if (dim(wnt_trs_sp_meta_filt %>% filter(ID == i & SV == "yes"))[1] > 0) {sv_count = sv_count + 1}
+}
+summary_table_df["wnt", "TR_prots_from_SV"] <- sv_count
+```
+
+
+```{r, warning=FALSE, echo=FALSE}
+TR_location(
+  wnt_trs_sp_meta_filt,
+  plot_title = "CRC WNT Protein TRs",
+  byTRtype = TRUE)
+
+wnt_trs_sp_meta_filt %>% 
+  filter(l_type == "homo" | l_type == "micro") %>% 
+  TR_location(plot_title = "CRC WNT homo and micro TRs", byTRtype = TRUE)
+```
+
+### P53 pathway
+```{r, include=FALSE}
+# Load data: Protein source, TRs
+p53_data <- load_pathway_data(base_path, "p53", meta = TRUE, idr = TRUE)
+p53_trs <- p53_data["trs"][[1]]
+p53_meta <- p53_data["meta"][[1]]
+```
+
+
+```{r, include=FALSE}
+# Join with SwissProt information on proteins
+p53_sp <- load_swissprot(dest_file_sp, p53_trs)
+p53_trs_sp <- merge(x = p53_trs, y = p53_sp, by = "ID", all.x = TRUE)
+p53_trs_sp_meta <- merge(x = p53_trs_sp, y = p53_meta, by = "ID", all.x = TRUE)
+```
+
+
+```{r, include=FALSE}
+# Total number of proteins containing TRs (before filter)
+summary_table_df["p53", "prots_with_TR"] <- length(unique(p53_trs_sp_meta$ID))
+# Total number of TRs (before filter)
+summary_table_df["p53", "total_TRs"] <- length(p53_trs_sp_meta$ID)
+
+# Filter for divergence and p-value of TRs
+p53_trs_sp_meta_filt = p53_trs_sp_meta %>% 
+  filter(divergence <= 0.1 & pvalue <= 0.05)
+# Number of proteins containing TRs after filter
+summary_table_df["p53", "prots_with_TR_filt"] <- length(unique(p53_trs_sp_meta_filt$ID))
+# Total number of TRs after filter
+summary_table_df["p53", "total_TRs_filt"] <- length(p53_trs_sp_meta_filt$ID)
+
+# Count how many of the proteins containing TRs originate from the Sanchez-Vega list of curated genes
+sv_count = 0
+for (i in unique(p53_trs_sp_meta_filt$ID)) {
+  if (dim(p53_trs_sp_meta_filt %>% filter(ID == i & SV == "yes"))[1] > 0) {sv_count = sv_count + 1}
+}
+summary_table_df["p53", "TR_prots_from_SV"] <- sv_count
+```
+
+
+```{r, warning=FALSE, echo=FALSE}
+TR_location(
+  p53_trs_sp_meta_filt,
+  plot_title = "CRC p53 Protein TRs",
+  byTRtype = TRUE)
+
+p53_trs_sp_meta_filt %>% 
+  filter(l_type == "homo" | l_type == "micro") %>% 
+  TR_location(plot_title = "CRC p53 homo and micro TRs", byTRtype = TRUE)
+```
+
+### PI3K pathway
+```{r, include=FALSE}
+# Load data: Protein source, TRs
+pi3k_data <- load_pathway_data(base_path, "pi3k", meta = TRUE, idr = TRUE)
+pi3k_trs <- pi3k_data["trs"][[1]]
+pi3k_meta <- pi3k_data["meta"][[1]]
+```
+
+
+```{r, include=FALSE}
+# Join with SwissProt information on proteins
+pi3k_sp <- load_swissprot(dest_file_sp, pi3k_trs)
+pi3k_trs_sp <- merge(x = pi3k_trs, y = pi3k_sp, by = "ID", all.x = TRUE)
+pi3k_trs_sp_meta <- merge(x = pi3k_trs_sp, y = pi3k_meta, by = "ID", all.x = TRUE)
+```
+
+
+```{r, include=FALSE}
+# Total number of proteins containing TRs (before filter)
+summary_table_df["pi3k", "prots_with_TR"] <- length(unique(pi3k_trs_sp_meta$ID))
+# Total number of TRs (before filter)
+summary_table_df["pi3k", "total_TRs"] <- length(pi3k_trs_sp_meta$ID)
+
+# Filter for divergence and p-value of TRs
+pi3k_trs_sp_meta_filt = pi3k_trs_sp_meta %>% 
+  filter(divergence <= 0.1 & pvalue <= 0.05)
+# Number of proteins containing TRs after filter
+summary_table_df["pi3k", "prots_with_TR_filt"] <- length(unique(pi3k_trs_sp_meta_filt$ID))
+# Total number of TRs after filter
+summary_table_df["pi3k", "total_TRs_filt"] <- length(pi3k_trs_sp_meta_filt$ID)
+
+# Count how many of the proteins containing TRs originate from the Sanchez-Vega list of curated genes
+sv_count = 0
+for (i in unique(pi3k_trs_sp_meta_filt$ID)) {
+  if (dim(pi3k_trs_sp_meta_filt %>% filter(ID == i & SV == "yes"))[1] > 0) {sv_count = sv_count + 1}
+}
+summary_table_df["pi3k", "TR_prots_from_SV"] <- sv_count
+```
+
+
+```{r, warning=FALSE, echo=FALSE}
+TR_location(
+  pi3k_trs_sp_meta_filt,
+  plot_title = "CRC pi3k Protein TRs",
+  byTRtype = TRUE)
+
+pi3k_trs_sp_meta_filt %>% 
+  filter(l_type == "homo" | l_type == "micro") %>% 
+  TR_location(plot_title = "CRC pi3k homo and micro TRs", byTRtype = TRUE)
+```
+
+
+### RAS-MAPK pathway
+```{r, include=FALSE}
+# Load data: Protein source, TRs
+rasmapk_data <- load_pathway_data(base_path, "ras-mapk", meta = TRUE, idr = TRUE)
+rasmapk_trs <- rasmapk_data["trs"][[1]]
+rasmapk_meta <- rasmapk_data["meta"][[1]]
+```
+
+
+```{r, include=FALSE}
+# Join with SwissProt information on proteins
+rasmapk_sp <- load_swissprot(dest_file_sp, rasmapk_trs)
+rasmapk_trs_sp <- merge(x = rasmapk_trs, y = rasmapk_sp, by = "ID", all.x = TRUE)
+rasmapk_trs_sp_meta <- merge(x = rasmapk_trs_sp, y = rasmapk_meta, by = "ID", all.x = TRUE)
+```
+
+
+```{r, include=FALSE}
+# Total number of proteins containing TRs (before filter)
+summary_table_df["ras-mapk", "prots_with_TR"] <- length(unique(rasmapk_trs_sp_meta$ID))
+# Total number of TRs (before filter)
+summary_table_df["ras-mapk", "total_TRs"] <- length(rasmapk_trs_sp_meta$ID)
+
+# Filter for divergence and p-value of TRs
+rasmapk_trs_sp_meta_filt = rasmapk_trs_sp_meta %>% 
+  filter(divergence <= 0.1 & pvalue <= 0.05)
+# Number of proteins containing TRs after filter
+summary_table_df["ras-mapk", "prots_with_TR_filt"] <- length(unique(rasmapk_trs_sp_meta_filt$ID))
+# Total number of TRs after filter
+summary_table_df["ras-mapk", "total_TRs_filt"] <- length(rasmapk_trs_sp_meta_filt$ID)
+
+# Count how many of the proteins containing TRs originate from the Sanchez-Vega list of curated genes
+sv_count = 0
+for (i in unique(rasmapk_trs_sp_meta_filt$ID)) {
+  if (dim(rasmapk_trs_sp_meta_filt %>% filter(ID == i & SV == "yes"))[1] > 0) {sv_count = sv_count + 1}
+}
+summary_table_df["ras-mapk", "TR_prots_from_SV"] <- sv_count
+```
+
+
+```{r, warning=FALSE, echo=FALSE}
+TR_location(
+  rasmapk_trs_sp_meta_filt,
+  plot_title = "CRC rasmapk Protein TRs",
+  byTRtype = TRUE)
+
+rasmapk_trs_sp_meta_filt %>% 
+  filter(l_type == "homo" | l_type == "micro") %>% 
+  TR_location(plot_title = "CRC rasmapk homo and micro TRs", byTRtype = TRUE)
+```
+
+
+### TGF-beta pathway
+```{r, include=FALSE}
+# Load data: Protein source, TRs
+tgfb_data <- load_pathway_data(base_path, "tgf-beta", meta = TRUE, idr = TRUE)
+tgfb_trs <- tgfb_data["trs"][[1]]
+tgfb_meta <- tgfb_data["meta"][[1]]
+```
+
+
+```{r, include=FALSE}
+# Join with SwissProt information on proteins
+tgfb_sp <- load_swissprot(dest_file_sp, tgfb_trs)
+tgfb_trs_sp <- merge(x = tgfb_trs, y = tgfb_sp, by = "ID", all.x = TRUE)
+tgfb_trs_sp_meta <- merge(x = tgfb_trs_sp, y = tgfb_meta, by = "ID", all.x = TRUE)
+```
+
+
+```{r, include=FALSE}
+# Total number of proteins containing TRs (before filter)
+summary_table_df["tgf-beta", "prots_with_TR"] <- length(unique(tgfb_trs_sp_meta$ID))
+# Total number of TRs (before filter)
+summary_table_df["tgf-beta", "total_TRs"] <- length(tgfb_trs_sp_meta$ID)
+
+# Filter for divergence and p-value of TRs
+tgfb_trs_sp_meta_filt = tgfb_trs_sp_meta %>% 
+  filter(divergence <= 0.1 & pvalue <= 0.05)
+# Number of proteins containing TRs after filter
+summary_table_df["tgf-beta", "prots_with_TR_filt"] <- length(unique(tgfb_trs_sp_meta_filt$ID))
+# Total number of TRs after filter
+summary_table_df["tgf-beta", "total_TRs_filt"] <- length(tgfb_trs_sp_meta_filt$ID)
+
+# Count how many of the proteins containing TRs originate from the Sanchez-Vega list of curated genes
+sv_count = 0
+for (i in unique(tgfb_trs_sp_meta_filt$ID)) {
+  if (dim(tgfb_trs_sp_meta_filt %>% filter(ID == i & SV == "yes"))[1] > 0) {sv_count = sv_count + 1}
+}
+summary_table_df["tgf-beta", "TR_prots_from_SV"] <- sv_count
+```
+
+
+```{r, warning=FALSE, echo=FALSE}
+TR_location(
+  tgfb_trs_sp_meta_filt,
+  plot_title = "CRC tgfb Protein TRs",
+  byTRtype = TRUE)
+
+tgfb_trs_sp_meta_filt %>% 
+  filter(l_type == "homo" | l_type == "micro") %>% 
+  TR_location(plot_title = "CRC tgfb homo and micro TRs", byTRtype = TRUE)
+```
+
+
+### DNA MMR
+```{r, include=FALSE}
+# Load data: Protein source, TRs
+mmr_trs <- load_tr_annotations(paste0(base_path, "results/TRs/mmr_TRs.tsv"))
+```
+
+
+```{r, include=FALSE}
+# Join with SwissProt information on proteins
+mmr_sp <- load_swissprot(dest_file_sp, mmr_trs)
+mmr_trs_sp <- merge(x = mmr_trs, y = mmr_sp, by = "ID", all.x = TRUE)
+```
+
+
+```{r, include=FALSE}
+# Total number of proteins containing TRs (before filter)
+summary_table_df["mmr", "prots_with_TR"] <- length(unique(mmr_trs_sp$ID))
+# Total number of TRs (before filter)
+summary_table_df["mmr", "total_TRs"] <- length(mmr_trs_sp$ID)
+
+# Filter for divergence and p-value of TRs
+mmr_trs_sp_filt = mmr_trs_sp %>% 
+  filter(divergence <= 0.1 & pvalue <= 0.05)
+# Number of proteins containing TRs after filter
+summary_table_df["mmr", "prots_with_TR_filt"] <- length(unique(mmr_trs_sp_filt$ID))
+# Total number of TRs after filter
+summary_table_df["mmr", "total_TRs_filt"] <- length(mmr_trs_sp_filt$ID)
+```
+
+
+```{r, warning=FALSE, echo=FALSE}
+TR_location(
+  mmr_trs_sp_filt,
+  plot_title = "DNA MMR Protein TRs",
+  byTRtype = TRUE)
+
+mmr_trs_sp_filt %>% 
+  filter(l_type == "homo" | l_type == "micro") %>% 
+  TR_location(plot_title = "DNA MMR homo and micro TRs", byTRtype = TRUE)
+```
+
+
+### CRC favourable proteins
+```{r, include=FALSE}
+# Load data: Protein source, TRs
+pa_fav_trs <- load_tr_annotations(paste0(base_path, "results/TRs/pa_fav_TRs.tsv"))
+```
+
+
+```{r, include=FALSE}
+# Join with SwissProt information on proteins
+pa_fav_sp <- load_swissprot(dest_file_sp, pa_fav_trs)
+pa_fav_trs_sp <- merge(x = pa_fav_trs, y = pa_fav_sp, by = "ID", all.x = TRUE)
+```
+
+
+```{r, include=FALSE}
+# Total number of proteins containing TRs (before filter)
+summary_table_df["pa_fav", "prots_with_TR"] <- length(unique(pa_fav_trs_sp$ID))
+# Total number of TRs (before filter)
+summary_table_df["pa_fav", "total_TRs"] <- length(pa_fav_trs_sp$ID)
+
+# Filter for divergence and p-value of TRs
+pa_fav_trs_sp_filt = pa_fav_trs_sp %>% 
+  filter(divergence <= 0.1 & pvalue <= 0.05)
+# Number of proteins containing TRs after filter
+summary_table_df["pa_fav", "prots_with_TR_filt"] <- length(unique(pa_fav_trs_sp_filt$ID))
+# Total number of TRs after filter
+summary_table_df["pa_fav", "total_TRs_filt"] <- length(pa_fav_trs_sp_filt$ID)
+```
+
+
+```{r, warning=FALSE, echo=FALSE}
+TR_location(
+  pa_fav_trs_sp_filt,
+  plot_title = "CRC pa_fav Protein TRs",
+  byTRtype = TRUE)
+
+pa_fav_trs_sp_filt %>% 
+  filter(l_type == "homo" | l_type == "micro") %>% 
+  TR_location(plot_title = "CRC pa_fav homo and micro TRs", byTRtype = TRUE)
+```
+
+### CRC unfavourable proteins
+```{r, include=FALSE}
+# Load data: Protein source, TRs
+pa_unfav_trs <- load_tr_annotations(paste0(base_path, "results/TRs/pa_unfav_TRs.tsv"))
+```
+
+
+```{r, include=FALSE}
+# Join with SwissProt information on proteins
+pa_unfav_sp <- load_swissprot(dest_file_sp, pa_unfav_trs)
+pa_unfav_trs_sp <- merge(x = pa_unfav_trs, y = pa_unfav_sp, by = "ID", all.x = TRUE)
+```
+
+
+```{r, include=FALSE}
+# Total number of proteins containing TRs (before filter)
+summary_table_df["pa_unfav", "prots_with_TR"] <- length(unique(pa_unfav_trs_sp$ID))
+# Total number of TRs (before filter)
+summary_table_df["pa_unfav", "total_TRs"] <- length(pa_unfav_trs_sp$ID)
+
+# Filter for divergence and p-value of TRs
+pa_unfav_trs_sp_filt = pa_unfav_trs_sp %>% 
+  filter(divergence <= 0.1 & pvalue <= 0.05)
+# Number of proteins containing TRs after filter
+summary_table_df["pa_unfav", "prots_with_TR_filt"] <- length(unique(pa_unfav_trs_sp_filt$ID))
+# Total number of TRs after filter
+summary_table_df["pa_unfav", "total_TRs_filt"] <- length(pa_unfav_trs_sp_filt$ID)
+```
+
+
+```{r, warning=FALSE, echo=FALSE}
+TR_location(
+  pa_unfav_trs_sp_filt,
+  plot_title = "CRC pa_unfav Protein TRs",
+  byTRtype = TRUE)
+
+pa_unfav_trs_sp_filt %>% 
+  filter(l_type == "homo" | l_type == "micro") %>% 
+  TR_location(plot_title = "CRC pa_unfav homo and micro TRs", byTRtype = TRUE)
+```
+
+
+```{r, echo=FALSE}
+knitr::kable(summary_table_df)
+```

@@ -1,4 +1,13 @@
 #!/usr/bin/env python3
+"""
+Script to detect Tandem Repeats in a specified fasta file containing protein sequences.
+Output will be generated in a specified output directory (which will be made if it does not exist).
+Output will consist of one .tsv file and one .pkl file for each protein in which a TR is detected. These files can be
+merged into one file containing all Tandem Repeats by running the separate 'merge_tral_results.py' script.
+
+NOTE: this script is heavily based on 'TR_in_multiple_Protein.py' by Matteo Delucchi (https://github.com/matteodelucchi/CRC_TRs)
+"""
+
 import sys
 import os
 import pickle

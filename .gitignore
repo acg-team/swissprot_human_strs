@@ -1,6 +1,6 @@
 #data and results files
-data/*
-results/*
+data/
+results/
 
 #Python 
 *__pycache__
@@ -12,3 +12,7 @@ venv
 #R
 *.Rhistory
 *.Rproj.user
+.Rproj.user
+
+#other
+*.DS_Store
