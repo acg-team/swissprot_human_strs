@@ -38,8 +38,8 @@ for(i in pathways){
     filter(TRinDS_overlap > 0) %>% 
     summarize(count = n())
   
-  print(paste(i, "TRs with overlap:", trs_with_overlap[1,1], "TRs in IDR:", tr_in_idr[1,1]))
-  out_name <- paste0(base_path, "results/overlap/", i, "TR_IDR_overlap.tsv")
-  write.table(overlap, file = out_name, row.names = FALSE)
+  print(paste(i, "TRs:",  dim(overlap[1]), "with overlap:", trs_with_overlap[1,1], "TRs in IDR:", tr_in_idr[1,1]))
+  out_name <- paste0(base_path, "results/overlap/", i, "_TR_IDR_overlap.tsv")
+  write.table(overlap, file = out_name, row.names = FALSE, sep="\t")
   print(paste("Wrote table to:", out_name))
 }

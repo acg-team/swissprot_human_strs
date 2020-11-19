@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Script to detect Tandem Repeats in a specified fasta file containing protein sequences.
+Script to detect Tandem Repeats in a specified fasta file containing protein sequences using TRAL.
 Output will be generated in a specified output directory (which will be made if it does not exist).
 Output will consist of one .tsv file and one .pkl file for each protein in which a TR is detected. These files can be
 merged into one file containing all Tandem Repeats by running the separate 'merge_tral_results.py' script.

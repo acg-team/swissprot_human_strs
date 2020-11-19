@@ -30,7 +30,10 @@ def concatenate_files(file_list, output_file):
             with open(file_name, "r") as f:
                 for line in f:
                     if not line.startswith("begin"):
-                        o.write("{}\t{}".format(prot_id, line))
+                        if line.endswith("\n"):
+                            o.write("{}\t{}".format(prot_id, line))
+                        else:
+                            o.write("{}\t{}\n".format(prot_id, line))
 
 
 if __name__ == "__main__":
