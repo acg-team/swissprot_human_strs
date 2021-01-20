@@ -22,37 +22,50 @@ TR_location <- function(tr_all_sp, plot_title = NULL, byTRtype = FALSE, byProt =
 
     # renormalized version accounting for true length
     tr_all_sp$repeat_type_bin <- with(tr_all_sp, cut(l_effective, breaks = c(0,1,3, 15, 2000), dig.lab = 12))
-
+    # tr_all_sp_positions <- tr_all_sp %>%
+    #   transmute(repeat_type_bin,
+    #             center=round(center),
+    #             Length=round(Length),
+    #             total_repeat_length=round(total_repeat_length)) %>%
+    #   mutate(usableLen = Length - total_repeat_length,
+    #          pos = (center-ceiling(total_repeat_length/2))/usableLen) %>%
+    #   filter(usableLen > 0) %>% #otherwise causes NaN or Inf
+    #   tbl_df
     tr_all_sp_positions <- tr_all_sp %>%
       transmute(repeat_type_bin,
                 center=round(center),
+                l_effective=l_effective,
+                promoting=promoting,
                 Length=round(Length),
-                total_repeat_length=round(total_repeat_length)) %>%
-      mutate(usableLen = Length - total_repeat_length,
-             pos = (center-ceiling(total_repeat_length/2))/usableLen) %>%
-      filter(usableLen > 0) %>% #otherwise causes NaN or Inf
+                repeat_region_length=round(repeat_region_length)) %>%
+      mutate(usableLen = Length - repeat_region_length,
+             pos = (center-ceiling(repeat_region_length/2))/usableLen) %>%
+      filter(usableLen > 0) %>% 
       tbl_df
 
     # possible bug: some centers lie outside the usable length
-    tr_all_sp_positions %>%
-      mutate(diff= center - floor(Length+1/2 - total_repeat_length/2)) %>%
-      arrange(-pos) %>%
-      top_n(1,diff) %>%
-      invisible
+    # tr_all_sp_positions %>%
+    #   mutate(diff= center - floor(Length+1/2 - total_repeat_length/2)) %>%
+    #   arrange(-pos) %>%
+    #   top_n(1,diff) %>%
+    #   invisible
 
     cols1.4 <- c("#2D882D", "#AA3939", "#AA7939", "#29506D")
     cols2.4 <- c("#2D882D", "#AA3939", "#AA7939", "#29506D")
+    
+    p1 <- ggplot(tr_all_sp_positions %>% filter(pos <= 1, l_effective <= 2), aes(x = pos, colour=promoting, fill=promoting)) +
+      geom_density(alpha=.7)
 
-    p1 <- ggplot(tr_all_sp_positions %>% filter(pos <= 1), aes(x = pos, colour=repeat_type_bin, fill=repeat_type_bin)) +
-      geom_density(alpha=.7) +
-      scale_color_manual( values = cols2.4, #values = c("grey","violet","turquoise4"),
-                          name  ="TR type",
-                          breaks=c("(0,1]","(1,3]","(3,15]", "(15,2000]"),
-                          labels=c("Homo", "Micro", "Small","Domain")) +
-      scale_fill_manual( values = cols1.4,
-                         name  ="TR type",
-                         breaks=c("(0,1]","(1,3]","(3,15]", "(15,2000]"),
-                         labels=c("Homo", "Micro", "Small","Domain"))
+    # p1 <- ggplot(tr_all_sp_positions %>% filter(pos <= 1), aes(x = pos, colour=repeat_type_bin, fill=repeat_type_bin)) +
+    #   geom_density(alpha=.7) +
+    #   scale_color_manual( values = cols2.4, #values = c("grey","violet","turquoise4"),
+    #                       name  ="TR type",
+    #                       breaks=c("(0,1]","(1,3]","(3,15]", "(15,2000]"),
+    #                       labels=c("Homo", "Micro", "Small","Domain")) +
+    #   scale_fill_manual( values = cols1.4,
+    #                      name  ="TR type",
+    #                      breaks=c("(0,1]","(1,3]","(3,15]", "(15,2000]"),
+    #                      labels=c("Homo", "Micro", "Small","Domain"))
 
     if(!is.null(plot_title)){
       p1 <- p1 +
@@ -74,22 +87,31 @@ TR_location <- function(tr_all_sp, plot_title = NULL, byTRtype = FALSE, byProt =
 
   if (byProt){
     # renormalized version accounting for true length
+    # tr_all_sp_positions <- tr_all_sp %>%
+    #   transmute(ID,
+    #             center=round(center),
+    #             Length=round(Length),
+    #             total_repeat_length=round(total_repeat_length)) %>%
+    #   mutate(usableLen = Length - total_repeat_length,
+    #          pos = (center-ceiling(total_repeat_length/2))/usableLen) %>%
+    #   filter(usableLen > 0) %>% #otherwise causes NaN or Inf
+    #   tbl_df
     tr_all_sp_positions <- tr_all_sp %>%
-      transmute(ID,
+      transmute(repeat_type_bin,
                 center=round(center),
                 Length=round(Length),
-                total_repeat_length=round(total_repeat_length)) %>%
-      mutate(usableLen = Length - total_repeat_length,
-             pos = (center-ceiling(total_repeat_length/2))/usableLen) %>%
-      filter(usableLen > 0) %>% #otherwise causes NaN or Inf
+                repeat_region_length=round(repeat_region_length)) %>%
+      mutate(usableLen = Length - repeat_region_length,
+             pos = (center-ceiling(repeat_region_length/2))/usableLen) %>%
+      filter(usableLen > 0) %>% 
       tbl_df
 
     # possible bug: some centers lie outside the usable length
-    tr_all_sp_positions %>%
-      mutate(diff= center - floor(Length+1/2 - total_repeat_length/2)) %>%
-      arrange(-pos) %>%
-      top_n(1,diff) %>%
-      invisible
+    # tr_all_sp_positions %>%
+    #   mutate(diff= center - floor(Length+1/2 - total_repeat_length/2)) %>%
+    #   arrange(-pos) %>%
+    #   top_n(1,diff) %>%
+    #   invisible
 
     p2 = ggplot(tr_all_sp_positions %>% filter(pos <= 1), aes(x = pos, colour=ID, fill=ID)) +
       geom_density(alpha=.7) +

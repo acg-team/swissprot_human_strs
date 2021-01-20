@@ -8,9 +8,9 @@ load_tr_annotations <- function(path) {
   # path = paste(local_base_path, path, sep=local_path_separator)
   tr_all = read.csv(path, sep="\t", header=TRUE, quote="", stringsAsFactors = FALSE)
   #tr_all = subset(tr_all, pvalue < 0.01)
-  tr_all$total_repeat_length = (tr_all$n_effective * tr_all$l_effective)
-  tr_all$center = tr_all$begin + (tr_all$total_repeat_length - 1)/2
-  tr_all$l_type = ifelse(tr_all$l_effective ==1, "homo",
+  #tr_all$total_repeat_length = (tr_all$n_effective * tr_all$l_effective) <- THIS IS WRONG (I think)
+  tr_all$center = tr_all$begin + (tr_all$repeat_region_length - 1)/2
+  tr_all$tr_type = ifelse(tr_all$l_effective ==1, "homo",
                          ifelse(tr_all$l_effective >1 & tr_all$l_effective <= 3, "micro",
                                 ifelse(tr_all$l_effective < 15, "small",
                                        "domain")))

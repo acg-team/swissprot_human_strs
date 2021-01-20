@@ -1,8 +1,8 @@
 #!/usr/bin/env/python
 import argparse
 
-from src.disorder_annotation import APIDisorderAnnotator
-from src.disorder_annotation import LocalDisorderAnnotator
+from src.disorder_annotators import APIDisorderAnnotator
+from src.disorder_annotators import LocalDisorderAnnotator
 
 
 def parser():

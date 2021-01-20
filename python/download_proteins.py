@@ -8,7 +8,7 @@ def parser():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--genefile", "-g", required=True, type=str, help="Path to .txt file containing one gene id per line."
+        "--genefile", "-g", required=True, type=str, help="Path to file containing one gene id per line."
     )
     parser.add_argument(
         "--outfile", "-o", required=True, type=str, help="File where protein fasta sequences will be written."

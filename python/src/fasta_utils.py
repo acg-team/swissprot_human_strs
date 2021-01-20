@@ -23,8 +23,12 @@ class ProteinRetriever(object):
         return gene_ids
 
     def check_output_dir(self, output_file):
-        output_dir = output_file.split("\\")[:-1]
-        output_dir = "\\".join(output_dir)
+        if output_file and not "/" in output_file:
+            # file is specified in cwd
+            return output_file
+        # check if output directory exists
+        output_dir = output_file.split("/")[:-1]
+        output_dir = "/".join(output_dir)
         if not os.path.isdir(output_dir):
             exit("Specified output directory for file {} does not exist".format(output_file))
         return output_file
@@ -36,13 +40,19 @@ class ProteinRetriever(object):
                     proteins = response.read().decode('utf-8')
                     return proteins
         except:
-            print("Couldn't retrieve proteins of gene: {} \n Connection issue or no proteins in Swissprot for this gene.".format(gene_id))
+            # print("Couldn't retrieve proteins of gene: {} \n Connection issue or no proteins in Swissprot for this gene.".format(gene_id))
             pass
 
     def retrieve_proteins(self):
         print("Started retrieving proteins for file {}".format(self.file_path))
         with open(self.output_file, "w") as out_file:
-            [out_file.write(self.proteins_from_gene(gene_id)) for gene_id in self.gene_ids]
+            # [out_file.write(self.proteins_from_gene(gene_id)) for gene_id in self.gene_ids]
+            for gene_id in self.gene_ids:
+                proteins = self.proteins_from_gene(gene_id)
+                if not proteins:
+                    print("WARNING: COULD NOT RETRIEVE ANY PROTEINS FOR GENE '{}'".format(gene_id))
+                    continue
+                out_file.write(proteins)
         print("Proteins retrieved and written to {}".format(self.output_file))
 
     def print_gene_ids(self):

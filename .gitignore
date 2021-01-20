@@ -12,6 +12,7 @@ venv
 #R
 *.Rhistory
 *.Rproj.user
+*.RData
 .Rproj.user
 
 #other

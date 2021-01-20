@@ -6,7 +6,7 @@ through the API (APIDisorderAnnotator). The former is written specifically to fu
 from the image at https://github.com/BioComputingUP/MobiDB-lite_docker.
 
 Author: Max Verbiest
-Contact: verb@zhaw.ch
+Contact: max.verbiest@zhaw.ch
 """
 
 import subprocess
@@ -18,7 +18,7 @@ import urllib.error
 try:
     from Bio import SeqIO
 except ModuleNotFoundError:
-    print("WARNING: Could not load Bio.SeqIO, only local disorder annotation is supported!")
+    print("WARNING: Could not load Bio.SeqIO -> can only perform local disorder annotations")
 
 __all__ = [
     "DisorderAnnotator",
@@ -48,7 +48,7 @@ class DisorderAnnotator(object):
 
         out_dir = os.path.join(*out_file.split("/")[:-1])
         if not os.path.isdir(out_dir):
-            raise FileNotFoundError("Directory for output file does not exist!")
+            raise FileNotFoundError("Directory for output file does not exist")
         return out_file
 
     def get_disorder_annotations(self):
@@ -82,7 +82,7 @@ class APIDisorderAnnotator(DisorderAnnotator):
         self.filter = "&projection=prediction-disorder-mobidb_lite"
         if curated:
             # self.filter += ",curated-disorder-priority"
-            raise NotImplementedError("Hanlding of curated MobiDB annotations is not (yet) supported")
+            raise NotImplementedError("Handling of curated MobiDB annotations is not yet supported")
 
     def query_mobidb(self, prot_id):
         """Construct url for current protein id and filter, query MobiDB
@@ -92,7 +92,7 @@ class APIDisorderAnnotator(DisorderAnnotator):
 
         Returns
         disorder_dict (dict):
-                        Dictionary containing all information available for protein entry in MobiDB
+                        Dictionary containing all information available for protein entry in MobiDB after filter.
                         If only part of this information is of interest, it can be extracted from the dictionary later
         """
 
@@ -206,7 +206,7 @@ class LocalDisorderAnnotator(DisorderAnnotator):
             if ran.stdout:
                 print('stdout:')
                 print(ran.stdout)
-            if  ran.stderr:
+            if ran.stderr:
                 print('stderr:')
                 print(ran.stderr)
             print()

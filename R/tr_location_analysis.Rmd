@@ -367,7 +367,7 @@ TR_location(
   byTRtype = TRUE)
 
 pa_fav_trs_sp_filt %>% 
-  filter(l_type == "homo" | l_type == "micro") %>% 
+  filter(tr_type == "homo" | tr_type == "micro") %>% 
   TR_location(plot_title = "CRC pa_fav homo and micro TRs", byTRtype = TRUE)
 ```
 
@@ -408,7 +408,7 @@ TR_location(
   byTRtype = TRUE)
 
 pa_unfav_trs_sp_filt %>% 
-  filter(l_type == "homo" | l_type == "micro") %>% 
+  filter(tr_type == "homo" | tr_type == "micro") %>% 
   TR_location(plot_title = "CRC pa_unfav homo and micro TRs", byTRtype = TRUE)
 ```
 

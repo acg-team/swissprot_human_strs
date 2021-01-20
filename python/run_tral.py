@@ -5,7 +5,12 @@ Output will be generated in a specified output directory (which will be made if 
 Output will consist of one .tsv file and one .pkl file for each protein in which a TR is detected. These files can be
 merged into one file containing all Tandem Repeats by running the separate 'merge_tral_results.py' script.
 
-NOTE: this script is heavily based on 'TR_in_multiple_Protein.py' by Matteo Delucchi (https://github.com/matteodelucchi/CRC_TRs)
+NOTE: this script is heavily based on 'TR_in_multiple_Protein.py' (https://github.com/matteodelucchi/CRC_TRs)
+and 'tandem_repeat_annotation_scripts.py'
+    (https://github.com/acg-team/swissrepeats/tree/master/src/tandem_repeat_annotation_workflows)
+
+Author: Max Verbiest
+Contact: max.verbiest@zhaw.ch
 """
 
 import sys
@@ -25,6 +30,15 @@ from tral.hmm import hmm
 
 
 def find_protein_repeats(sequences_file, result_dir):
+    """Detect TRs in all protein entries in a specified .fasta file
+    IMPORTANT: fasta files are assumed to have UniProt/ SwissProt headers, e.g.:
+        >sp|Q8N2I9|STK40_HUMAN Serine/threonine-protein kinase 40 OS=Homo sapiens OX=9606 GN=STK40 PE=1 SV=2
+
+    Parameters:
+    sequences_file (str):   path to .fasta file containing sequences for TR detection
+    result_dir (str):       path to directory where results will be deposited (one file will be generated
+                            per protein entry in the input file)
+    """
     # TODO implement checking of potential results dir for proteins to skip
     logging.config.fileConfig(config_file("logging.ini"))
     log = logging.getLogger('root')
@@ -94,7 +108,7 @@ def find_protein_repeats(sequences_file, result_dir):
         # create filename
         output_tsv_file = os.path.join(result_dir, seq_name + ".tsv")
 
-        # save TR-file in tsv format TODO: prevent writing if no TRs remain after filter and cluster
+        # save TR-file in tsv format TODO: prevent file creation if no TRs remain after filter and cluster
         write_file(seq.get_repeatlist("denovo_final"), output_tsv_file)
 
         all_filtered_repeats += len(seq.get_repeatlist("denovo_final"))
@@ -112,6 +126,22 @@ def find_protein_repeats(sequences_file, result_dir):
 
 
 def filter_repeatlist(tr_list, pvalue_threshold=0.05, divergence_threshold=0.1, n_threshold=2.5):
+    """Filter a list of tandem repeats based on specified criteria
+
+    Parameters
+    tr_list (tral.repeat_list.RepeatList):
+                            List of repeats to filter
+    pvalue_threshold (float):
+                            P value cutoff for filter
+    divergence_threshold (float):
+                            Divergence cutoff for filter
+    n_threshold (float):    Minimum number of repeat unit repetitions for repeat to be kept
+
+    Returns
+    tr_list_filtered (RepeatList):
+                            Filtered list of repeats
+    """
+
     # filtering for pvalue
     tr_list_filtered = tr_list.filter(
         "pvalue",
@@ -135,6 +165,19 @@ def filter_repeatlist(tr_list, pvalue_threshold=0.05, divergence_threshold=0.1, 
 
 
 def refine_repeatlist(seq, tag):
+    """Take a sequence with one or more repeat lists associated to it, and a tag specifying repeat list of interest
+    (one sequence can have multiple repeat lists associated to it, each identifiable with a tag). Then, create a cpHMM
+    for each tandem repeat, detect TRs in sequence again and see if this improves (refines) the de novo TR
+
+    seq (tral.sequence.Sequence):
+                    A sequence with one or more RepeatLists associated to it
+    tag (str):      Which RepeatList associated to seq should be used?
+
+    Returns
+    refined_list (list):
+                    A list containing HMM refined tandem repeats
+    """
+
     refined_list = []
     for TR in seq.get_repeatlist(tag).repeats:
         use_refined = False
@@ -163,6 +206,15 @@ def refine_repeatlist(seq, tag):
 
 
 def write_file(tr_list, destination):
+    """Write all tandem repeats from a RepeatList to a specified output file (.tsv format)
+
+    Parameters
+    tr_list (tral.repeat_list.RepeatList):
+                    A list of TRs to be written to file
+    destination (str):
+                    Name of file to be made
+    """
+
     header = "\t".join(["begin",
                         "msa_original",
                         "l_effective",

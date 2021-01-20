@@ -1,6 +1,7 @@
 #!/usr/bin/env R
 # Function is heavily based on:
 # https://github.com/acg-team/swissrepeats/blob/master/results/compute_tr_all_overlap.R
+library(tidyverse)
 
 calculate_tr_idr_overlap <- function(tr_df, idr_df) {
   # unique id for each IDR
@@ -33,7 +34,7 @@ calculate_tr_idr_overlap <- function(tr_df, idr_df) {
                                   
         # check DS in TR -> There can be multiple (?) 
         # so overlap should be added instead of set for this one
-        if(tr_begin <= idr_begin & tr_end >= idr_end){
+        if(tr_begin <= idr_begin && tr_end >= idr_end){
           tr_df$DSinTR_overlap[which(tr_df$TR_id == current_tr)] = tr_df$DSinTR_overlap[which(tr_df$TR_id == current_tr)] + (idr_end - idr_begin + 1)
         }
         # check TR in DS

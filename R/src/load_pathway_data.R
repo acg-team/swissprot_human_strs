@@ -3,6 +3,7 @@
 # Very inflexible, highly dependent on directory structure
 # Requires functions load_tr_annotations(), reformat_ids()
 
+source("./src/reformat_ids.R")
 load_pathway_data <- function(base_path, pathway, meta=FALSE, idr=FALSE){
   options = c("pa_unfav",
               "pa_fav",
@@ -27,9 +28,11 @@ load_pathway_data <- function(base_path, pathway, meta=FALSE, idr=FALSE){
   }
   
   if(idr){
-    idr_path <- paste0(base_path, "results/disorder/", pathway, "_IDRs.tsv")
-    idr_df <- read.table(idr_path, header = TRUE, sep = "\t")
-    data_list[["idrs"]] = idr_df
+    idr_path <- paste0(base_path, "results/disorder/local_annotations/", pathway, "_local_disorder.tsv")
+    idr_df <- read.table(idr_path, header = FALSE, sep = "\t")
+    colnames(idr_df) <- c("ID", "begin", "end")
+    idr_df <- reformat_ids(idr_df)
+    data_list[["idrs"]] = as.data.frame(idr_df)
   }
   return(data_list)
 }
