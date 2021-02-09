@@ -43,13 +43,19 @@ def get_signal_locations(accessions, destination):
                     if i["@type"] == "signal peptide":
                         begin = i["location"]["begin"]["@position"]
                         end = i["location"]["end"]["@position"]
-                        signal_peptide = (begin, end)
+                        try:
+                            if i["@description"] == "Not cleaved":
+                                signal_peptide = (begin, end, "retained")
+                        except KeyError:
+                            signal_peptide = (begin, end, "cleaved")
                 except:
                     # print("Problem parsing features for accession '{}'".format(accession))
                     continue
             if signal_peptide:
                 # print(accession, signal_peptide)
-                o.write("{}\t{}\t{}\n".format(accession, signal_peptide[0], signal_peptide[1]))
+                o.write("{}\t{}\t{}\t{}\n".format(accession, signal_peptide[0], signal_peptide[1], signal_peptide[2]))
+            # Added counter to keep track of how far the script has come, makes it easier to restart after potential
+            # crashes, which does happen sometimes
             if counter % 20 == 0:
                 print("finished query for accession: {} (number {})".format(accession, counter))
             counter += 1
@@ -67,9 +73,26 @@ def parser():
 
 
 def main():
+    debug = False
+    if debug:
+        print("RUNNING IN DEBUG MODE")
+        accession_list = ["O95445", "P36894"] # [SP retained, SP cleaved]
+        for accession in accession_list:
+            query = "https://www.uniprot.org/uniprot/{}.xml".format(accession)
+
+            response_text = requests.get(query).content
+            xml_dict = xmltodict.parse(response_text)
+            try:
+                features = xml_dict["uniprot"]["entry"]["feature"]
+            except KeyError:
+                print("No features were available for accession '{}'".format(accession))
+                continue
+            print("")
+        exit()
+
     args = parser()
     with open(args.protein_ids, "r") as f:
-        accession_list = [line.strip() for line in f]
+        accession_list = [line.strip().split("\t")[0] for line in f]
 
     get_signal_locations(accession_list, args.outfile)
 

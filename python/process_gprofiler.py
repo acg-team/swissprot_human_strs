@@ -37,7 +37,7 @@ def process_gprofiler(gprofiler, outfile, idrs=False, signals=False, idr_list=No
         if not signal_file:
             raise (Exception("Need a file of signal peptide proteins to calculate fraction signal peptide containing per term"))
         with open(signal_file, "r") as f:
-            signal_set = {line.split("\t")[0] for line in f}
+            signal_set = {line.strip().split("\t")[0] for line in f}
 
     f = open(gprofiler, "r")
     header = next(f)

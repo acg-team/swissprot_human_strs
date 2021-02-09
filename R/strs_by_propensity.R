@@ -4,8 +4,8 @@ library(tidyverse)
 master_df <- read.table("../results/overlap/local_disorder/the_good_one.tsv", header=TRUE, sep="\t")
 
 # loading signal peptide data
-signal_peptides <- read.table("../results/misc/signal_peptides.tsv", header=FALSE, sep="\t")
-colnames(signal_peptides) <- c("ID", "signal_begin", "signal_end")
+signal_peptides <- read.table("../results/misc/signal_peptides_all_proteins_with_ptm.tsv", header=FALSE, sep="\t")
+colnames(signal_peptides) <- c("ID", "signal_begin", "signal_end", "PTM")
 
 # merging data frames
 master_df <- master_df %>% left_join(signal_peptides, by="ID")
@@ -18,7 +18,10 @@ master_df$signal_end[is.na(master_df$signal_end)] <- 0
 master_df %>% filter(begin > signal_end) %>% select(ID, promoting) %>% distinct() %>% summarise(count=n())
 
 # how many STRs left after filtering out signal peptide STRs? (grouped by intrinsic disorder propensity)
-master_df %>% select(ID, promoting) %>% distinct() %>% group_by(promoting) %>% summarise(count=n())
+master_df %>% select(ID, begin, promoting) %>% distinct() %>% group_by(promoting) %>% summarise(count=n())
+master_df %>% filter(begin > signal_end) %>% select(ID, begin, promoting) %>% distinct() %>% group_by(promoting) %>%  count()
+
+master_df %>% filter(!begin > signal_end) %>% select(ID, begin, promoting) %>% distinct() %>% group_by(promoting) %>%  count()
 
 # calculate normalized STR centers
 str_location_df <- master_df %>%
@@ -55,7 +58,7 @@ dev.off()
 pie_df <- master_df %>% group_by(promoting) %>% summarise(count=n())
 pie_df$data_set <- "all"
 
-pdf("../results/figures/nosig_strs_by_promoting_pie.pdf")
+pdf("../results/figures/strs_by_promoting_pie.pdf")
 pie_df %>% ggplot(aes(x=data_set, y=count, fill=promoting)) +
   geom_bar(stat="identity") +
   coord_polar("y", start=0) +
@@ -85,7 +88,7 @@ str_location_df %>% filter(begin > signal_end) %>%
 dev.off()
 
 # Pie chart of disorder propensity but STRs in signal peptides are removed
-pie_nosig_df <- master_df %>% filter(begin > signal_end) %>% group_by(promoting) %>% summarise(count=n())
+pie_nosig_df <- master_df %>% filter(!end <= signal_end) %>% group_by(promoting) %>% summarise(count=n())
 pie_nosig_df$data_set <- "all"
 
 pdf("../results/figures/nosig_strs_by_promoting_pie.pdf")

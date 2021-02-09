@@ -72,7 +72,7 @@ class APIDisorderAnnotator(DisorderAnnotator):
     def __init__(self, fasta, out_file, curated=False):
         """
         Parameters
-        curated (bool): (Not implemented! Should curated information from
+        curated (bool): (Not implemented!) Should curated information from
                         MobiDB be incorporated in output? (default:False)
         """
 
