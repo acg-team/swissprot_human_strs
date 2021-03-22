@@ -105,9 +105,10 @@ all_sites_strs_df <- all_sites_strs_df %>% mutate(directionality = fav - unfav)
 # overall_summary_df$feature <- factor(overall_summary_df$feature, levels=c("str", "idr"))
 
 overall_summary_df <- read.table("../results/overlap/local_disorder/str_idr_all_pa_summary.tsv", header=TRUE, sep="\t")
+overall_summary_df %>% filter(pa != "no_pa", feature == "str") %>% select(site, pa, n_with_feature) %>% View()
 
 pdf("../results/figures/18012021_update/str_idr_per_site.pdf")
-overall_summary_df %>% filter(feature == "idr") %>% 
+overall_summary_df %>% filter(feature == "str") %>% 
   ggplot(aes(x=feature, y=perc_with_feature, fill=pa)) +
   geom_bar(stat="identity", position = position_dodge(width=0.55), width = 0.5) +
   theme_classic() +
@@ -117,9 +118,9 @@ overall_summary_df %>% filter(feature == "idr") %>%
   facet_wrap(~site, ncol = 6, scale = "free_x")
 dev.off()
 
-x <- overall_summary_df %>% filter(feature == "str") %>% select(n)
+x <- overall_summary_df %>% filter(feature == "str") %>% select(n_with_feature)
 x <- x[[1]]
-y <- overall_summary_df %>% filter(feature == "idr") %>% select(n)
+y <- overall_summary_df %>% filter(feature == "idr") %>% select(n_with_feature)
 y <- y[[1]]
 cor.test(x, y, method="pearson")
 
@@ -146,23 +147,30 @@ stat_df %>% filter(pvalue <= FDR) %>% View()
 stat_df %>% filter(pvalue <= FDR) %>% arrange(site) %>% View()
 
 
-# Check correlation of 
+# Check correlation of idr and str in pa groups
 str_summary_df <- overall_summary_df %>% filter(feature == "str") %>% 
-  select(site, pa, perc_with_feature) %>% mutate(str = perc_with_feature) %>% 
-  select(-perc_with_feature)
+  select(site, pa, n_with_feature) %>% mutate(str = n_with_feature) %>% 
+  select(-n_with_feature)
 
 idr_summary_df <- overall_summary_df %>% filter(feature == "idr") %>% 
-  select(site, pa, perc_with_feature) %>% mutate(idr = perc_with_feature) %>% 
-  select(-perc_with_feature)
+  select(site, pa, n_with_feature) %>% mutate(idr = n_with_feature) %>% 
+  select(-n_with_feature)
 
 idr_str_summary_df <- str_summary_df %>% left_join(idr_summary_df, by=c("site", "pa"))
 
 idr_str_summary_df %>%
   filter(!pa == "no_pa") %>%
   # filter(!site %in% c("testis", "skin", "brain", "prostate")) %>% 
-  ggplot(aes(x=str, y=idr)) +
-  geom_point(aes(colour=site, shape=pa)) +
-  geom_smooth(se=FALSE, method="lm") 
+  ggplot(aes(x=log(str), y=log(idr))) +
+  geom_point(aes(colour=site, shape=pa), size=4) +
+  geom_smooth(se=FALSE, method="lm") +
+  theme_bw() +
+  theme(text=element_text(size=20)) +
+  xlab("log(count) STR proteins") +
+  xlim(0, 8) +
+  ylab("log(count) IDR proteins") +
+  ylim(0, 8) +
+  coord_fixed()
 
 
 

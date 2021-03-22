@@ -2,6 +2,9 @@
 data/
 results/
 
+#old messy R code
+R/
+
 #Python 
 *__pycache__
 

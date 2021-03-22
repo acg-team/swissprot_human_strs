@@ -15,7 +15,7 @@ import argparse
 
 def get_signal_locations(accessions, destination):
     """Retrieve signal peptide begin and end sites from UniProt for all accessions and write them to a file.
-    Output file will have format ID\tbegin\end\n
+    Output file will have format ID\tbegin\tend\n
 
     Paramters
     accessions (list, set, tuple):
@@ -76,7 +76,7 @@ def main():
     debug = False
     if debug:
         print("RUNNING IN DEBUG MODE")
-        accession_list = ["O95445", "P36894"] # [SP retained, SP cleaved]
+        accession_list = ["O95445", "P36894"]  # [SP retained, SP cleaved]
         for accession in accession_list:
             query = "https://www.uniprot.org/uniprot/{}.xml".format(accession)
 

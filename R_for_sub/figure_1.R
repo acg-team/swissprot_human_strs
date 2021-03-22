@@ -42,7 +42,7 @@ str_purity <- function(msa, return_val){
         max_count = cur_count
       }
     }
-  return(max_count)
+    return(max_count)
   } 
   # wrong return_val specified
   else{
@@ -50,7 +50,7 @@ str_purity <- function(msa, return_val){
   }
 }
 
-master_df <- read.table("../results/overlap/local_disorder/the_good_one.tsv", header=TRUE, sep="\t")
+master_df <- read.table("../data_for_sub/str_sp_final.tsv", header=TRUE, sep="\t")
 
 master_df <- master_df %>% mutate(
   dominant_unit = sapply(msa_original, str_purity, return_val="dom"),
@@ -59,7 +59,7 @@ master_df <- master_df %>% mutate(
   longest_stretch = sapply(msa_original, str_purity, return_val="longest")
 )
 
-#
+# Counts of how many STRs were found per region length <= 20, split on unit length
 master_df %>% 
   filter(repeat_region_length <= 20) %>% 
   group_by(l_effective, repeat_region_length) %>% count() %>% 
@@ -72,10 +72,11 @@ master_df %>%
   ylab("Count") +
   labs(colour = "Repeat unit length") +
   theme(legend.position = c(0.8, 0.8), legend.background = element_rect(linetype = "solid", colour="black"))
-  
-# Number of homo repeats per length
-master_df %>% filter(l_effective == 1) %>% group_by(dominant_unit) %>% count() %>% View()
 
+# Investigate the length distributios for homorepeats, keeping in mind the 
+# AA disorder propensity
+
+# Mapping disorder propensity to amino acids, source of data: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2676888/
 aa_df <- data.frame(
   aa = c("W", "F", "Y",	"I", "M", "L", "V", "N", "C", "T", "A", "G", "R", "D", "H", "Q", "K", "S", "E", "P"), 
   propensity = c(rep("order", 10), rep("disorder", 10)),
@@ -86,76 +87,26 @@ homo_lengths <- master_df %>% filter(l_effective == 1) %>%
   group_by(dominant_unit, repeat_region_length) %>% count()
 homo_lengths$dominant_unit <- factor(homo_lengths$dominant_unit, levels = aa_df$aa)
 
+# Plot homorepeat regions lengths per AA, do not include AA's with < 10 occurrences
 homo_lengths %>% 
   filter(!dominant_unit %in% c("Y", "N", "M", "V", "C"), repeat_region_length <= 50) %>% 
   ggplot(aes(x=repeat_region_length, y=log(n))) +
   geom_point(aes()) +
-  # geom_smooth() +
   theme_bw() +
   theme(text = element_text(size=20)) +
   xlab("Repeat region length") +
   ylab("log(Count)") +
   facet_wrap(~dominant_unit, nrow = 5)
 
-# Overview of counts
-master_df %>% 
-  filter(l_effective == 1) %>% 
-  group_by(dominant_unit) %>% 
-  summarise(
-    total = n(),
-    max_len = max(repeat_region_length),
-    mean_len = mean(repeat_region_length),
-    max_longest = max(longest_stretch),
-    mean_longest = mean(longest_stretch),
-    max_frac = max(frac_dominant),
-    mean_frac = mean(frac_dominant)
-  ) %>% 
-  View()
-
-
-# functions of l == 2 repeats
-master_df %>% 
-  filter(l_effective == 2) %>% 
-  group_by(dominant_unit) %>% 
-  count(name="STR frequency") %>% View()
-  group_by(`STR frequency`) %>% count(name="Number of times observed") %>% 
-  ggplot(aes(x=`STR frequency`, y=`Number of times observed`)) +
-  geom_bar(stat="identity")
-
-
-master_df %>% 
-  filter(dominant_unit == "RS") %>% 
-  select(ID, n_effective, begin) %>% 
-  # arrange(n_effective) %>% 
-  left_join(load_swissprot("../data/swissrepeats/swissprot_human.tsv"), by="ID") %>% 
-  arrange(protein_name) %>% 
-  View()
-
-
-# to_keep <- master_df %>% filter(l_effective == 2) %>% 
-#   select(cg_sum, dominant_unit) %>% group_by(cg_sum) %>% distinct() %>% 
-#   count() %>% filter(n == 2) %>% ungroup() %>% select(cg_sum)
-# to_keep <- as.vector(to_keep)[[1]]
-
-master_df %>% filter(l_effective == 2) %>% select(cg_sum) %>% group_by(cg_sum) %>% count() %>% View()
-
-to_keep <- c(8820, 13291, 1164, 4497)
-# x <- master_df %>% filter(l_effective == 2, cg_sum %in% to_keep) %>% 
-#   select(cg_sum, dominant_unit, n_effective) %>% 
-#   group_by(cg_sum, dominant_unit, n_effective) %>% count()
-# 
-# out <- by(data = x, INDICES = x$cg_sum, FUN = function(m) {
-#   m <- droplevels(m)
-#   m <- ggplot(m, aes(n_effective, n, group=1, fill = dominant_unit)) + 
-#     geom_bar(stat="identity") + theme_classic() + xlab("Number of units") + ylab("Count") +
-#     labs(fill = "Dominant unit") + theme(legend.position = c(0.8, 0.8)) + scale_x_continuous(seq(3, 11, 0.5))
-# })
-
+# For the 4 most abundant combinations of AAs to make up STR with unit length 2,
+# plot the frequency of the two possible orders (e.g. AP vs PA)
 library(gridExtra)
-x2 <- master_df %>% filter(l_effective == 2, cg_sum %in% to_keep) %>%
+to_keep <- c(8820, 13291, 1164, 4497) # will select only STRs made up of {A, P}, {G, R}, {G, S} or {R, S}
+x <- master_df %>% filter(l_effective == 2, cg_sum %in% to_keep) %>%
   group_by(cg_sum, dominant_unit) %>%
   summarise(count=n())
-out2 <- by(data = x2, INDICES = x2$cg_sum, FUN = function(m) {
+
+out <- by(data = x, INDICES = x$cg_sum, FUN = function(m) {
   m <- droplevels(m)
   m <- ggplot(m, aes(as.factor(cg_sum), count, group=1, fill = dominant_unit)) + 
     geom_bar(stat="identity", position="dodge2") + theme_classic() + 
@@ -166,13 +117,3 @@ out2 <- by(data = x2, INDICES = x2$cg_sum, FUN = function(m) {
     theme(text = element_text(size=20))
 })
 do.call(grid.arrange, c(out2, ncol=1))
-
-
-# master_df %>% filter(l_effective == 2, cg_sum %in% to_keep) %>%
-#   group_by(cg_sum, dominant_unit) %>%
-#   summarise(count=n()) %>%
-#   ggplot(aes(x=as.factor(cg_sum), y=count, fill=dominant_unit)) +
-#   geom_bar(stat="identity", position = position_dodge())
-  
-
-

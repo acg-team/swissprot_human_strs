@@ -2,7 +2,7 @@ library(tidyverse)
 data_df <- read.table("../results/functional_enrichment/gProfiler/gprofiler_reformat_processed_signals.tsv", sep="\t", header=TRUE, quote="")
 str_in_sig_df <- read.table("../results/functional_enrichment/gProfiler/gprofiler_reformat_processed_str_in_sp.tsv", sep="\t", header=TRUE, quote="")
 
-data_df <- data_df %>% left_join(str_in_sig_df %>% mutate(str_sig_frac=signal_fraction, str_sig_num=intersection_size*signal_fraction) %>% select(term_name, str_sig_frac, str_sig_num), by="term_name")
+data_df <- data_df %>% left_join(str_in_sig_df %>% mutate(str_sig_frac=signal_fraction, str_sig_num=intersection_size*signal_fraction) %>% dplyr::select(term_name, str_sig_frac, str_sig_num), by="term_name")
 
 plot_df <- data_df %>% arrange(log2fc)
 fold_levels <- factor(plot_df$term_name, ordered=TRUE)
@@ -14,6 +14,8 @@ plot_df %>% group_by(source) %>% slice_max(n=25, order_by=negative_log10_of_adju
   scale_fill_gradient2(limits=c(0, 1)) +
   geom_bar(stat="identity") +
   theme_classic() +
+  labs(fill="Fraction\nwith IDR") +
+  xlab("log2(Fold change)") +
   theme(axis.title.y = element_blank()) +
   facet_wrap(~source, scales="free_y", nrow = 2)
 dev.off()
@@ -29,12 +31,17 @@ data_df %>%
 pdf("../results/figures/raw_figures/signal_v_idr_fraction.pdf")
 data_df %>% 
   ggplot(aes(x=idr_fraction, y=signal_fraction)) +
-  geom_point(size = 2, aes(colour=source)) +
+  geom_point(size = 4, aes(colour=source)) +
   geom_smooth() +
   theme_classic() +
+  theme(text=element_text(size=25), 
+        legend.background = element_rect(linetype = "solid", colour="black")) +
   # ylim(0, 1) +
   # facet_wrap(~source) +
-  coord_fixed()
+  coord_fixed() +
+  labs(colour = "Data source") +
+  xlab("Fraction with IDR") +
+  ylab("Fraction with signal peptide")
 dev.off()
 
 # absolute values of idr and signal containing
@@ -58,6 +65,7 @@ data_df %>%
   theme_classic()
 
 low_idr <- data_df %>% filter(idr_fraction < 0.5)
+low_idr %>% select(source, term_name, idr_fraction, signal_fraction) %>% View()
 low_idr %>% select(source, term_name, idr_fraction, signal_fraction, str_sig_frac, str_sig_num) %>% View()
 low_idr %>% summarise(mean_sig_frac = mean(signal_fraction))
 data_df %>% anti_join(low_idr, by="term_name") %>% summarise(mean_sig_frac = mean(signal_fraction))

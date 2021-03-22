@@ -46,10 +46,10 @@ mca_plot_df %>%
   
 
 # Analysis of counts per GO term
-to_cluster <- read.table("../data/GO_PA_counts/goa_counts_CFP.tsv", sep="\t", header=TRUE)
+to_cluster <- read.table("../data/GO_PA_counts/goa_counts_norm_CFP.tsv", sep="\t", header=TRUE)
 # to_cluster <- to_cluster %>% filter(!pa_group %in% c("liver_pa_fav", "liver_pa_unfav", "kidney_pa_fav", "kidney_pa_unfav"))
 row.names(to_cluster) <- to_cluster$pa_group
-to_cluster <- to_cluster %>% select(-pa_group)
+to_cluster <- to_cluster %>% dplyr::select(-pa_group)
 to_cluster_filt <- to_cluster %>% select_if(colSums(.) != 0)
 
 # pca, center values around 0 and set st.dev to 1
@@ -60,8 +60,6 @@ View(pca$x)
 
 # how many PCs?
 fviz_eig(pca)
-fviz_pca_ind(pca, axes=c(1, 2), repel = FALSE, col.ind = as.factor(cl_mca$cluster))
-fviz_pca_var(pca, axes=c(1, 2), repel = TRUE, col.ind = as.factor(cl_mca$cluster))
 
 eig.val <- get_eigenvalue(pca)
 eig.val
@@ -82,5 +80,26 @@ set.seed(123)
 fviz_nbclust(res.ind$contrib[,1:4], kmeans, method = "wss")
 
 set.seed(123)
-cl_mca <- kmeans(x=res.ind$contrib[,1:4], centers=5, nstart=25, iter.max=10)
-View(cl_mca$cluster)
+cl_pca <- kmeans(x=res.ind$contrib[,1:4], centers=5, nstart=25, iter.max=10)
+View(cl_pca$cluster)
+
+# Plot with clusters
+fviz_pca_ind(pca, axes=c(1, 2), repel = FALSE, col.ind = as.factor(cl_pca$cluster))
+fviz_pca_var(pca, axes=c(1, 2), repel = TRUE, col.ind = as.factor(cl_pca$cluster))
+
+names = row.names(pca$x)
+as.data.frame(pca$x[,1:2]) %>%
+  ggplot(aes(x=PC1, y=PC2, colour=as.factor(cl_pca$cluster), labels=names)) + 
+  geom_hline(yintercept = 0) +
+  geom_vline(xintercept = 0) +
+  geom_point(size=4) +
+  # geom_text(aes(label=names),hjust=0, vjust=-1) +
+  # theme_classic()
+  theme_bw() +
+  theme(text = element_text(size=20)) +
+  xlab("PC 1 (11.2%)") +
+  ylab("PC 2 (9.2%)") +
+  labs(colour="Cluster")
+
+
+         
