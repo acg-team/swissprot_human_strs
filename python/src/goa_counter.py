@@ -86,8 +86,8 @@ class GoaCounter(object):
                     count = len(pa_dict[group].intersection(goa_dict[term]))
                     if scale:
                         # divide count by total number of proteins found for group, try to offset effect of group size
-                        count = str(count / len(pa_dict[group]))
-                    counts_list.append(count)
+                        count = count / len(pa_dict[group])
+                    counts_list.append(str(count))
                 o.write("{}\t{}\n".format(group, "\t".join(counts_list)))
 
     def __str__(self):
@@ -100,15 +100,16 @@ class GoaCounter(object):
 
 def main():
     goa_handle = "/Users/maxverbiest/PhD/projects/SP_CRC_Pathway_TRs/data/GO_PA_counts/goa_human.gaf"
-    pa_handle = "/Users/maxverbiest/PhD/projects/SP_CRC_Pathway_TRs/data/pathology_atlas/pa_str_proteins_wide.tsv"
+    pa_handle = "/Users/maxverbiest/PhD/projects/SP_CRC_Pathway_TRs/data/pathology_atlas/pa_disorder_str_proteins_wide.tsv"
     counter = GoaCounter(goa_file_handle=goa_handle, pa_file_handle=pa_handle)
     # goa_dict = counter.parse_goa_file()
     # pa_dict = counter.parse_pa_file()
 
-    goa_dict = counter.parse_goa_file(domains={"P"})
+    goa_dict = counter.parse_goa_file(domains={"C", "F", "P"})
     counter.write_goa_counts_per_group(
-        output_file="/Users/maxverbiest/PhD/projects/SP_CRC_Pathway_TRs/data/GO_PA_counts/goa_counts_norm_P.tsv",
-        goa_dict=goa_dict
+        output_file="/Users/maxverbiest/PhD/projects/SP_CRC_Pathway_TRs/data/GO_PA_counts/goa_counts_dispro_norm_CFP.tsv",
+        goa_dict=goa_dict,
+        scale=True
     )
 
 

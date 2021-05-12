@@ -8,6 +8,7 @@ __all__ = [
     "FastaMerger",
 ]
 
+
 class ProteinRetriever(object):
     def __init__(self, file_path, output_file):
         self.file_path = file_path

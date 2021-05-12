@@ -1,9 +1,9 @@
 """
 Process g:Profiler output to include log2(fold change) and number/fraction of IDR containing proteins per enriched term.
 IMPORTANT:
-Table downloaded from g:Profiler website comes with quotation marks around each element and is comma separated.
-Handling this would be very tedious to implement in this script, so I suggest preprocessing the table using the
-following R commands:
+Table downloaded from g:Profiler website comes in .csv format with "" around cells with multiple entries.
+This script expects a .tsv file with no quotation marks, so I suggest preprocessing the table using for example
+the following R commands:
     tab <- read.table("gProfiler_file.csv", sep=",", header=TRUE)
     write.table(tab, "reformat.tsv", sep="\t", row.names=FALSE, quote=FALSE)
 
@@ -15,7 +15,7 @@ import numpy as np
 
 
 def process_gprofiler(gprofiler, outfile, idrs=False, signals=False, idr_list=None, signal_file=None):
-    """Take a prepocessed, tsv gProfiler output file and add columns for specified measures:
+    """Take a prepocessed tsv gProfiler output file and add columns for specified measures:
         default: log2(fold change) optional: idr fraction, signal peptide fraction
     Measures will be calculated, added and the processed gProfiler file is written to outfile
 

@@ -1,4 +1,5 @@
 library(tidyverse)
+cbPalette <- c("#D55E00", "#56B4E9", "#F0E442", "#000000", "#CC79A7", "#009E73", "#0072B2", "#E69F00")
 
 # loading STR data
 master_df <- read.table("../data_for_sub/str_sp_final.tsv", header=TRUE, sep="\t")
@@ -33,7 +34,7 @@ str_location_df <- master_df %>%
 
 # Locations of STR centers in proteins, coloured on disorder promoting propensity 
 str_location_df %>% 
-  ggplot(aes(x = pos, colour=promoting, fill=promoting)) +
+  ggplot(aes(x = pos, fill=promoting)) +
   geom_density(alpha=.7) +
   theme_bw() +
   theme(axis.ticks.y = element_blank(),
@@ -41,7 +42,8 @@ str_location_df %>%
         panel.grid = element_blank(),
         text = element_text(size=20)) +
   xlab("Normalized STR center location")  +
-  labs(fill="STR promotes", color="STR promotes")
+  labs(fill="STR promotes") +
+  scale_fill_manual(values=c(cbPalette[1], cbPalette[3], cbPalette[2]))
 
 # Pie chart of disorder propensity
 pie_df <- master_df %>% group_by(promoting) %>% summarise(count=n())
@@ -54,20 +56,23 @@ pie_df %>% ggplot(aes(x=data_set, y=count, fill=promoting)) +
   theme(axis.text = element_blank(),
         axis.ticks = element_blank(),
         panel.grid = element_blank(),
-        axis.title = element_blank())
+        axis.title = element_blank()) +
+  labs(fill="STR promotes") +
+  scale_fill_manual(values=c(cbPalette[1], cbPalette[3], cbPalette[2]))
 
 # Locations of STR in proteins, colored on disorder promoting propensity but 
 # STRs in signal peptides are removed
 str_location_df %>% filter(begin > signal_end) %>% 
-  ggplot(aes(x = pos, colour=promoting, fill=promoting)) +
+  ggplot(aes(x = pos, fill=promoting)) +
   geom_density(alpha=.7) +
   theme_bw() +
   theme(axis.ticks.y = element_blank(),
         axis.text.y = element_blank(),
         panel.grid = element_blank(),
         text = element_text(size=20)) +
-  xlab("Normalised STR centre location")  +
-  labs(fill="STR promotes", color="STR promotes")
+  xlab("Normalized STR center location")  +
+  labs(fill="STR promotes") +
+  scale_fill_manual(values=c(cbPalette[1], cbPalette[3], cbPalette[2]))
 
 # Pie chart of disorder propensity but STRs in signal peptides are removed
 pie_nosig_df <- master_df %>% filter(!end <= signal_end) %>% group_by(promoting) %>% summarise(count=n())
@@ -80,4 +85,5 @@ pie_nosig_df %>% ggplot(aes(x=data_set, y=count, fill=promoting)) +
   theme(axis.text = element_blank(),
         axis.ticks = element_blank(),
         panel.grid = element_blank(),
-        axis.title = element_blank())
+        axis.title = element_blank()) +
+  scale_fill_manual(values=c(cbPalette[1], cbPalette[3], cbPalette[2]))

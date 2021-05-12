@@ -1,4 +1,6 @@
 library(tidyverse)
+library(gridExtra)
+cbPalette <- c("#D55E00", "#56B4E9", "#F0E442", "#000000", "#CC79A7", "#009E73", "#0072B2", "#E69F00")
 
 str_purity <- function(msa, return_val){
   msa <- as.character(msa)
@@ -16,7 +18,8 @@ str_purity <- function(msa, return_val){
   } 
   else if(return_val == "cg"){
     aa = c("A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y")
-    cg <- c(0, 1, 2, 4, 7, 13, 24, 44, 84, 161, 309, 594, 1164, 2284, 4484, 8807, 17305, 34301, 68008, 134852)
+    # here, cg refers a set of integers with unique subset sums generated using the Conway-Guy sequence
+    cg <- c(132568, 199412, 233119, 250115, 258613, 262936, 265136, 266256, 266826, 267111, 267259, 267336, 267376, 267396, 267407, 267413, 267416, 267418, 267419, 267420)
     cg_values <- setNames(as.list(cg), aa)
     dom <- str_remove_all(dom, "-")
     cg_sum <- 0
@@ -54,23 +57,24 @@ master_df <- read.table("../data_for_sub/str_sp_final.tsv", header=TRUE, sep="\t
 
 master_df <- master_df %>% mutate(
   dominant_unit = sapply(msa_original, str_purity, return_val="dom"),
-  cg_sum = sapply(msa_original, str_purity, return_val="cg"),
-  frac_dominant = sapply(msa_original, str_purity, return_val="frac"),
-  longest_stretch = sapply(msa_original, str_purity, return_val="longest")
+  cg_sum = sapply(msa_original, str_purity, return_val="cg")
+  # frac_dominant = sapply(msa_original, str_purity, return_val="frac"),
+  # longest_stretch = sapply(msa_original, str_purity, return_val="longest")
 )
 
 # Counts of how many STRs were found per region length <= 20, split on unit length
 master_df %>% 
   filter(repeat_region_length <= 20) %>% 
-  group_by(l_effective, repeat_region_length) %>% count() %>% 
+  group_by(l_effective, repeat_region_length) %>% count() %>%
   ggplot(aes(x=repeat_region_length, y=n, colour=as.factor(l_effective))) +
   geom_point(size=4) +
   geom_line(size=1.5) +
   theme_classic() +
   theme(text = element_text(size=20)) +
-  xlab("STR length") +
+  xlab("STR length (amino acids)") +
   ylab("Count") +
   labs(colour = "Repeat unit length") +
+  scale_colour_manual(values=c(cbPalette[1], cbPalette[2])) +
   theme(legend.position = c(0.8, 0.8), legend.background = element_rect(linetype = "solid", colour="black"))
 
 # Investigate the length distributios for homorepeats, keeping in mind the 
@@ -94,26 +98,63 @@ homo_lengths %>%
   geom_point(aes()) +
   theme_bw() +
   theme(text = element_text(size=20)) +
-  xlab("Repeat region length") +
+  xlab("STR length (amino acids)") +
   ylab("log(Count)") +
   facet_wrap(~dominant_unit, nrow = 5)
 
-# For the 4 most abundant combinations of AAs to make up STR with unit length 2,
-# plot the frequency of the two possible orders (e.g. AP vs PA)
-library(gridExtra)
-to_keep <- c(8820, 13291, 1164, 4497) # will select only STRs made up of {A, P}, {G, R}, {G, S} or {R, S}
-x <- master_df %>% filter(l_effective == 2, cg_sum %in% to_keep) %>%
-  group_by(cg_sum, dominant_unit) %>%
-  summarise(count=n())
+#############################
+### SUPPLEMENTAL ANALYSES ###
+#############################
 
-out <- by(data = x, INDICES = x$cg_sum, FUN = function(m) {
-  m <- droplevels(m)
-  m <- ggplot(m, aes(as.factor(cg_sum), count, group=1, fill = dominant_unit)) + 
-    geom_bar(stat="identity", position="dodge2") + theme_classic() + 
-    theme(axis.title.x=element_blank(),
-          axis.text.x=element_blank(),
-          axis.ticks.x=element_blank())+ ylab("Count") +
-    labs(fill = "Dominant\nunit") +
-    theme(text = element_text(size=20))
+# cbPalette <- c("#D55E00", "#56B4E9", "#F0E442", "#000000", "#CC79A7", "#009E73", "#0072B2", "#E69F00")
+
+# Counts obtained from counting dipeptide occurrences in non-repeating sequence in SwissProt proteins
+background_counts_df <- data.frame("dominant_unit"=c('PS', 'SP', 'ED', 'DE', 'GA', 'AG', 'KE', 'EK', 'GS', 'SG', 'ER', 'RE', 'AP', 'PA', 'GP', 'PG', 'RS', 'SR', 'GR', 'RG'),
+                                "bg_count"=c(65013, 67656, 49441, 37708, 52947, 55680, 56844, 62152, 66492, 64524, 45113, 45048, 50250, 57180, 51094, 62618, 47512, 51326, 42550, 41482))
+
+master_df %>% filter(l_effective ==2) %>% 
+  group_by(cg_sum, dominant_unit) %>% 
+  count() %>% View()
+master_df %>% filter(l_effective ==2) %>% 
+  group_by(cg_sum) %>% 
+  count() %>% View()
+
+# add dipeptide counts from the non-repeat background sequence
+counts_comparison_df <- master_df %>% filter(l_effective ==2) %>% 
+  group_by(cg_sum, dominant_unit) %>% summarise(str_count=n()) %>%
+  left_join(background_counts_df, by="dominant_unit") %>% 
+  filter(!is.na(bg_count)) %>% 
+  pivot_longer(cols=c(str_count, bg_count), names_to="count")
+
+# calculate percentages to facilitate plotting
+get_sums <- counts_comparison_df %>% group_by(cg_sum, count) %>% summarize(sum=sum(value))
+counts_comparison_df <- counts_comparison_df %>% 
+  left_join(get_sums, by=c("cg_sum", "count")) %>% 
+  mutate(percentage=(value/sum)*100)
+
+# plots
+# remove combinations observed < 30 times in all STRs
+counts_comparison_df <- counts_comparison_df %>% filter(!cg_sum %in% c(516941, 517522))
+out2 <- by(data=counts_comparison_df, INDICES=counts_comparison_df$cg_sum, FUN=function(m){
+  ggplot(m, aes(count, percentage, fill=dominant_unit)) +
+  geom_bar(stat="identity", position="dodge2") + theme_classic() + 
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_text(angle=45, hjust=1),
+        axis.ticks.x=element_blank())+ ylab("Percentage") +
+  scale_x_discrete(labels=c("bg_count" = "non-STR", "str_count" = "STRs")) +
+  scale_fill_manual(values=cbPalette) +
+  labs(fill = "Dominant\nunit") 
 })
-do.call(grid.arrange, c(out2, ncol=1))
+do.call(grid.arrange, c(out2, ncol=3))
+
+# Fisher's exact tests to determine if distribution over the dipeptides is different
+## in the STRs compared to non-repeating sequence
+by(data=counts_comparison_df, INDICES=counts_comparison_df$cg_sum, FUN=function(m){
+  # select relevant columns
+  m <- m %>% ungroup() %>% select(dominant_unit, count, value)
+  # spread columns, necessary for subsequent test
+  m <- m %>% pivot_wider(id_cols=dominant_unit, names_from=count, values_from=value)
+  # prepare df for Fisher's exact test
+  m <- data.frame(m[,-1], row.names=m$dominant_unit)
+  fisher.test(m) # Fisher's exact test
+})
